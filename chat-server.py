@@ -1,56 +1,66 @@
 #!/usr/bin/env python3
-"""Server for multithreaded (asynchronous) chat application."""
+from socket import socket, SOCK_STREAM, AF_INET
+from threading import Thread, Lock
 
-from socket import AF_INET, socket, SOCK_STREAM
-from threading import Thread
+lock = Lock()
 
 
 def accept_incoming_connections():
-    """Sets up handling for incoming clients."""
     while True:
-        client, client_address = SERVER.accept()
-        print("{} has connected".format(client_address))
-        client.send(bytes("Greetings from the cave! " +
-                          "Now type your name and press enter!",
-                          "utf8"))
-        addresses[client] = client_address
+        client, client_addr = SERVER.accept()
+        print("{} has connected".format(client_addr))
+
+        lock.acquire()
+        addresses[client] = client_addr
+        lock.release()
+
         Thread(target=handle_client, args=(client,)).start()
 
 
-def handle_client(client):  # Takes client socket as argument.
-    """Handles a single client connection."""
+def handle_client(client):
+    client.send(b"Hello! Now you are in a chat room. Tell us your name!")
+    name = client.recv(BUFSIZ).decode('utf-8')
 
-    name = client.recv(BUFSIZ).decode("utf8")
-    welcome = 'Welcome {}! If you ever want to quit, type <quit> to exit.'\
-              .format(name)
-    client.send(bytes(welcome, "utf8"))
-    msg = "%s has joined the chat!" % name
-    broadcast(bytes(msg, "utf8"))
+    welcome_msg = 'Welcome {}! Type <quit> to exit.'\
+                  .format(name)
+    client.send(welcome_msg.encode('utf-8'))
+
+    msg = "{} has joined the chat.".format(name)
+    broadcast(msg)
+
+    lock.acquire()
     clients[client] = name
+    lock.release()
 
     while True:
-        msg = client.recv(BUFSIZ)
-        if msg != bytes("<quit>", "utf8"):
-            broadcast(msg, name+": ")
-        else:
-            client.send(bytes("<quit>", "utf8"))
-            client.close()
+        msg = client.recv(BUFSIZ).decode('utf-8')
+        if msg != '<quit>':         # client send message
+            broadcast(msg, name)
+        else:                       # client tried to quit
+            client_addr = addresses[client]
+            lock.acquire()
             del clients[client]
-            broadcast(bytes("%s has left the chat." % name, "utf8"))
+            del addresses[client]
+            lock.release()
+
+            client.close()
+            broadcast("{} has left the chat.".format(name))
             break
+    print("{} has disconnected".format(client_addr))
 
 
-def broadcast(msg, prefix=""):  # prefix is for name identification
-    """Broadcasts a message to all the clients."""
-    for sock in clients:
-        sock.send(bytes(prefix, "utf8")+msg)
+def broadcast(message, sender=''):
+    if sender:
+        message = '{}: {}'.format(sender, message)
+    for c in clients:
+        c.send(message.encode('utf-8'))
 
 
 clients = {}
 addresses = {}
 
 HOST = ''
-PORT = 33000
+PORT = 12345
 BUFSIZ = 1024
 ADDR = (HOST, PORT)
 
