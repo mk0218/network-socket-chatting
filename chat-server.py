@@ -150,5 +150,8 @@ if __name__ == "__main__":
     ACCEPT_THREAD = Thread(target=accept_incoming_connections)
     VOICE_THREAD = Thread(target=handle_voice)
     ACCEPT_THREAD.start()
+    VOICE_THREAD.start()
     ACCEPT_THREAD.join()
+    VOICE_THREAD.join()
     SERVER.close()
+    VCE_SERVER.close()
