@@ -9,6 +9,7 @@ BUFSIZ = 1024
 PORT = 12345
 # for voice 
 HOST = '127.0.0.1'
+RCV_HOST = '0.0.0.0'
 recv_port = 12347
 recv_frames = []
 send_port = 12346
@@ -68,11 +69,11 @@ def receive_voice_frame():
         
 def receive_udp():
     recv_udp_socket = socket(AF_INET, SOCK_DGRAM)
-    recv_udp_socket.bind((HOST, recv_port))
+    recv_udp_socket.bind((RCV_HOST, recv_port))
 
     while True:   
         voice_data, recv_addr = recv_udp_socket.recvfrom(CHUNK*CHANNELS*2)
-        # print("received data from {}".format(recv_addr))
+        print("received data from {}".format(recv_addr))
         if voice_data:
             recv_frames.append(voice_data)
             print("receiving...")
