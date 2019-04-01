@@ -59,7 +59,7 @@ class Client:
     def get_client_with_address(cls, addr):
         for name in cls._instances:
             c = cls._instances[name]
-            if c.addr == addr:
+            if c.addr[0] == addr[0]:
                 return c
         return None
 
@@ -78,6 +78,7 @@ class Client:
         self.sock.send(msg.encode('utf-8'))
 
     def send_voice(self, data):
+        print("Send Voice to {}: {}".format(self.name, self.addr[0]))
         VCE_SERVER.sendto(data, (self.addr[0], VCE_SEND_PORT))
 
     def rcv_text(self):
@@ -125,10 +126,12 @@ def accept_incoming_connections():
 def handle_voice():
     while True:
         data, addr = VCE_SERVER.recvfrom(CHUNK * CHANNELS * 2)
-        sender = Client.get_client_with_address(addr).name
+        print("Data received from UDP socket: {}".format(addr))
+        sender = Client.get_client_with_address(addr)
         # if the sender of voice data not in clients, ignore
         if sender:
-            Client.broadcast_voice(sender, data)
+            print("Sender: {}".format(sender.name))
+            Client.broadcast_voice(sender.name, data)
 
 
 if __name__ == "__main__":
