@@ -138,7 +138,7 @@ class Video:
                 frame = cv2.imdecode(frame, 1)
                 # frame = numpy.reshape(frame, (800, 600, 3))
                 cv2.imshow('Video', frame)
-                cv2.waitKey(1)
+                cv2.waitKey(10)
             except OSError:
                 break
         cv2.destroyAllWindows()

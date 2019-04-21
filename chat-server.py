@@ -152,7 +152,6 @@ def accept_incoming_connections():
         # if the name already exists, client must choose another name
         # must change
         while Client.exists(name):
-            print("이름이 이미 있다고라?")
             client_sock.send(b'<ChooseAnotherName>')
             name = client_sock.recv(BUFSIZ).decode('utf-8')
 
@@ -164,7 +163,6 @@ def accept_incoming_connections():
         vid_name = vid_sock.recv(BUFSIZ).decode('utf-8')
 
         while vid_name[:6] != 'Name: ' or vid_name[6:] != name:
-            print("무한루프으 이름다시받아아")
             vid_name = vid_sock.recv(BUFSIZ).decode('utf-8')
 
         c.vid_sock = vid_sock
