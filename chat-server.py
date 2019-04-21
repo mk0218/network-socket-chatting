@@ -17,6 +17,7 @@ HOST = ''
 TXT_PORT = 12345
 VCE_RCV_PORT = 12346
 VCE_SEND_PORT = 12347
+VID_PORT = 12348
 BUFSIZ = 1024
 
 
@@ -29,6 +30,7 @@ class Client:
         self.name = name
         self.addr = addr
         self.sock = sock
+        self.vid_sock = ''
         self.state = self.CREATED
 
         with self._lock:
@@ -42,11 +44,19 @@ class Client:
             with self._lock:
                 del self._instances[self.name]
         self.sock.close()
+        self.vid_sock.close()
         print("{} has disconnected".format(self.addr))
 
     @classmethod
     def exists(cls, name):
         return name in cls._instances
+
+    @classmethod
+    def ip_exists(cls, ip):
+        for c in cls._instances:
+            if c.addr[0] == ip:
+                return True
+        return False
 
     @classmethod
     def get_client_with_name(cls, name):
@@ -74,11 +84,20 @@ class Client:
             if name != sender:
                 cls._instances[name].send_voice(data)
 
+    @classmethod
+    def broadcast_video(cls, sender, data):
+        for name in cls._instances:
+            if name != sender:
+                cls._instances[name].send_video(data)
+
     def send(self, msg):
         self.sock.send(msg.encode('utf-8'))
 
     def send_voice(self, data):
         VCE_SERVER.sendto(data, (self.addr[0], VCE_SEND_PORT))
+
+    def send_video(self, data):
+        self.vid_sock.sendall(data)
 
     def rcv_text(self):
         while self.state == self.RUNNING:
@@ -93,11 +112,33 @@ class Client:
                 self.state = self.QUIT
         self.close_connection()
 
+    def recvall(welf, sock, count):
+        buf = b''
+        while count:
+            newbuf = sock.recv(count)
+            if not newbuf:
+                return None
+            buf += newbuf
+            count -= len(newbuf)
+        return buf
+
+    def rcv_video(self):
+        while self.state == self.RUNNING:
+            try:
+                length = self.recvall(self.vid_sock, 16).decode('utf-8')
+                frame = self.recvall(self.vid_sock, int(length))
+                self.broadcast_video(self.name, length.encode('utf-8'))
+                self.broadcast_video(self.name, frame)
+            except ConnectionResetError:
+                self.state = self.QUIT
+        self.close_connection()
+
     def handle(self):
         self.state = self.RUNNING
         self.send("Welcome {}! Type <quit> to exit.".format(self.name))
         self.broadcast("{} has joined the chat".format(self.name))
         Thread(target=self.rcv_text).start()
+        Thread(target=self.rcv_video).start()
 
 
 def accept_incoming_connections():
@@ -106,19 +147,25 @@ def accept_incoming_connections():
         print("{} has connected".format(client_addr))
 
         # when a client connected, ask name
-        client_sock.send(b"Type your name: ")
         name = client_sock.recv(BUFSIZ).decode('utf-8')
 
         # if the name already exists, client must choose another name
         # must change
         while Client.exists(name):
-            client_sock.send("The name {} already exists. \
-                             Please choose another name."
-                             .format(name).encode('utf-8'))
+            client_sock.send(b'<ChooseAnotherName>')
             name = client_sock.recv(BUFSIZ).decode('utf-8')
 
         # save client information and handle client
         c = Client(name, client_addr, client_sock)
+        client_sock.send(b'<Success>')
+
+        vid_sock, vid_addr = VID_SERVER.accept()
+        vid_name = vid_sock.recv(BUFSIZ).decode('utf-8')
+
+        while vid_name[:6] != 'Name: ' or vid_name[6:] != name:
+            vid_name = vid_sock.recv(BUFSIZ).decode('utf-8')
+
+        c.vid_sock = vid_sock
         c.handle()
 
 
@@ -142,6 +189,10 @@ if __name__ == "__main__":
     SERVER = socket(AF_INET, SOCK_STREAM)
     SERVER.bind((HOST, TXT_PORT))
     SERVER.listen(5)
+
+    VID_SERVER = socket(AF_INET, SOCK_STREAM)
+    VID_SERVER.bind((HOST, VID_PORT))
+    VID_SERVER.listen(5)
 
     VCE_SERVER = socket(AF_INET, SOCK_DGRAM)
     VCE_SERVER.bind((HOST, VCE_RCV_PORT))
