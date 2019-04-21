@@ -169,17 +169,6 @@ def accept_incoming_connections():
         c.handle()
 
 
-# def accept_video_connections():
-#     while True:
-#         sock, addr = VID_SERVER.accept()
-#         name = VID_SERVER.recv(BUFSIZ).decode('utf-8')
-#         if name[:6] == 'Name: ':
-#             c = Client.get_client_with_name(name[6:])
-#             c.vid_sock = sock
-#         # c = Client.get_client_with_address(addr)
-#         # c.vid_sock = sock
-
-
 def handle_voice():
     while True:
         data, addr = VCE_SERVER.recvfrom(CHUNK * CHANNELS * 2)

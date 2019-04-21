@@ -109,8 +109,6 @@ class Video:
     def send_video(self):
         while True:
             ret, frame = self.cam.read()
-            # cv2.imshow('My WebCam', frame)
-            # cv2.waitKey(1)
 
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
             result, imgencode = cv2.imencode('.jpg', frame, encode_param)
@@ -136,7 +134,6 @@ class Video:
                 data = self.recvall(vid_socket, int(length))
                 frame = numpy.fromstring(data, dtype='uint8')
                 frame = cv2.imdecode(frame, 1)
-                # frame = numpy.reshape(frame, (800, 600, 3))
                 cv2.imshow('Video', frame)
                 cv2.waitKey(10)
             except OSError:
@@ -146,16 +143,6 @@ class Video:
     def activate(self):
         Thread(target=self.send_video).start()
         Thread(target=self.rcv_video).start()
-
-# def record_video():
-#     capture = cv2.VideoCapture(0)
-#     while True:
-#         ret, frame = capture.read()
-#         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-#         result, imgencode = cv2.imencode('.jpg', frame, encode_param)
-#         data = numpy.array(imgencode)
-#         data = data.tostring()
-#         vid_socket.send(data)
 
 
 class GUI:
@@ -287,14 +274,6 @@ class MainGUI:
                                           command=self.send)
         self.send_button.pack()
 
-    # def update(self):
-    #     ret, frame = self.vid.get_frame()
-    #     if ret:
-    #         self.photo = PIL.ImageTk.PhotoImage(image=PIL.Image.fromarray(frame))
-    #         self.canvas.create_image(0, 0, image=self.photo, anchor=tkinter.NW) 
-
-    #     self.window.after(self.delay, self.update)
-
     def pressSend(self, event):
         self.send()
 
@@ -307,12 +286,6 @@ class MainGUI:
                     break
             except OSError:
                 break
-
-    # def rcv_video(self):
-    #     while True:
-    #         try:
-    #             data = vid_socket.recv(BUFSIZ)
-    #             self.video_frame.
 
     def send(self):
         msg = self.text_to_send.get()
@@ -335,7 +308,6 @@ if __name__ == '__main__':
         print("Video Server is not found")
     else:
         vid_socket.send("Name: {}".format(name).encode('utf-8'))
-        # receive_thread = Thread
 
     window = tkinter.Tk()
     app = MainGUI(window)
