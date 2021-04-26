@@ -1,5 +1,5 @@
 # network-socket-chatting
-2019년 1학기 포항공과대학교 컴퓨터공학과 네트워크 과목 프로젝트
+2019년 1학기 포항공과대학교 컴퓨터공학과 네트워크 과목 프로젝트  
 A project for CSED353 Computer Network at Postech in the spring semester 2019 
 
 ## 실행시 주의점
